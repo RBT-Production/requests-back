@@ -11,6 +11,8 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -75,7 +77,7 @@ namespace WebAPI.Controllers
 
             try
             {
-                await _context.SaveChangesAsync();
+                await SaveRequestWithUnixTime(request);
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -91,6 +93,7 @@ namespace WebAPI.Controllers
 
             return NoContent();
         }
+
 
         // GET: api/request/5
         /// <summary>
@@ -121,7 +124,7 @@ namespace WebAPI.Controllers
         public async Task<ActionResult<Request>> PostRequestDetail(Request request)
         {
             _context.RequestDetails.Add(request);
-            await _context.SaveChangesAsync();
+            SaveRequestWithUnixTime(request);
 
             return CreatedAtAction("GetRequestDetail", new { id = request.no }, request);
         }
@@ -135,16 +138,16 @@ namespace WebAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<Request>> DeleteRequestDetail(int id)
         {
-            var paymentDetail = await _context.RequestDetails.FindAsync(id);
-            if (paymentDetail == null)
+            var details = await _context.RequestDetails.FindAsync(id);
+            if (details == null)
             {
                 return NotFound();
             }
 
-            _context.RequestDetails.Remove(paymentDetail);
+            _context.RequestDetails.Remove(details);
             await _context.SaveChangesAsync();
 
-            return paymentDetail;
+            return details;
         }
 
         /// <summary>
@@ -155,6 +158,17 @@ namespace WebAPI.Controllers
         private bool RequestDetailExists(int id)
         {
             return _context.RequestDetails.Any(e => e.no == id);
+        }
+        
+        /// <summary>
+        /// Save request with UNIX time
+        /// </summary>
+        /// <param name="request">The request.</param>
+        /// <returns></returns>
+        private async Task SaveRequestWithUnixTime(Request request)
+        {
+            request.date = (Int32) (DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+            await _context.SaveChangesAsync();
         }
     }
 }
